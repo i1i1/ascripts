@@ -1,5 +1,4 @@
 #!/bin/sh
 
 cd "$(dirname $0)"
-./afm.awk $1
-
+./afm.awk $1 &

@@ -30,6 +30,7 @@ func gettree(tree, dir,		arr, i, j) {
 	tree["print"] = "yes"	# Should print content of directory?
 
 	if (arr[0] <= 1) {
+		delete tree["nodes"]
 		tree["nodes"][EMPTY]["type"] == "file"
 		return
 	}
@@ -48,14 +49,30 @@ func gettree(tree, dir,		arr, i, j) {
 		} else
 			tree["nodes"][arr[i]]["type"] = "file"
 	}
+
+	for (i in tree["nodes"]) {
+		flag = 0
+
+		for (j = 1; j < arr[0]; j++) {
+			if (arr[j] != i)
+				continue
+
+			flag = 1
+			break
+		}
+
+		if (flag == 0)
+			delete tree["nodes"][i]
+	}
 }
 
-func parsedir(dir, wi, start) {
+func parsenode(nd, wi, start,		cmd1, chn, lnn, ln_depth,
+														cur_depth, prev_ln, ln) {
 	cmd1 = "9p read acme/"wi"/body"
 	lnn = 1
 	chn = 0
 
-	dir[0] = 1
+	nd[0] = 1
 	cur_depth = CDS
 
 	prev_ln = ""
@@ -67,10 +84,10 @@ func parsedir(dir, wi, start) {
 		sub("^("DS")*(("opened")|("closed")|("file"))", "", ln)
 
 		if (cur_depth < ln_depth) {
-			dir[dir[0]++] = prev_ln
+			nd[nd[0]++] = prev_ln
 			cur_depth++
 		} else if (cur_depth > ln_depth) {
-			dir[0]--
+			nd[0]--
 			cur_depth--
 		}
 
@@ -82,7 +99,7 @@ func parsedir(dir, wi, start) {
 	}
 	close(cmd1)
 
-	dir[dir[0]++] = ln
+	nd[nd[0]++] = ln
 }
 
 func sort(arr,		i, j, tmp) {
@@ -207,7 +224,6 @@ func events(	cmd, cmd1, ln, ev) {
 					return
 				case "DotDot":
 					root = getl("readlink -f \""root"/..\"")
-					delete tree
 					gettree(tree, root)
 					print_stuff(wi)
 					break
@@ -216,7 +232,6 @@ func events(	cmd, cmd1, ln, ev) {
 					print_stuff(wi)
 					break
 				case "List":
-					delete tree
 					gettree(tree, root)
 					print_stuff(wi)
 					break
@@ -224,17 +239,17 @@ func events(	cmd, cmd1, ln, ev) {
 					system(ev["content"])
 				}
 			} else {
-				parsedir(dir, wi, int(ev["start"]))
+				parsenode(nd, wi, int(ev["start"]))
 
-				if (dir[dir[0] - 1] == EMPTY)
+				if (nd[nd[0] - 1] == EMPTY)
 					continue
 
-				if (dir[dir[0] - 1] !~ "/$")
+				# if directory
+				if (nd[nd[0] - 1] !~ "/$")
 					continue
 
-				root = root "/" getdir(dir)
+				root = root "/" getdir(nd)
 				root = getl("readlink -f '"root"'")
-				delete tree
 				gettree(tree, root)
 				print_stuff(wi)
 			}
@@ -243,18 +258,19 @@ func events(	cmd, cmd1, ln, ev) {
 			if (ev["place"] == "tag")
 				continue
 
-			parsedir(dir, wi, int(ev["start"]))
+			parsenode(nd, wi, int(ev["start"]))
 
-			if (dir[dir[0] - 1] == EMPTY)
+			if (nd[nd[0] - 1] == EMPTY)
 				continue
 
-			if (dir[dir[0] - 1] ~ "/$") {
-				sub("/$", "", dir[dir[0] - 1])
-				switchprintdir(tree, dir, 1)
+			# if directory
+			if (nd[nd[0] - 1] ~ "/$") {
+				sub("/$", "", nd[nd[0] - 1])
+				switchprintdir(tree, nd, 1)
 				print_stuff(wi)
 				win_showaddr(wi, "#"ev["start"])
 			} else {
-				fp = root"/"getdir(dir)
+				fp = root"/"getdir(nd)
 
 				if (isfile(fp) == "yes")
 					system("plumb \""esc(fp)"\"")
