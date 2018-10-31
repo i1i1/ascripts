@@ -1,0 +1,6 @@
+#!/bin/sh
+
+nm="$(dirname $0)/scratches/$(date +%Y_%m_%d__%H_%M)"
+
+echo name "$nm"|9p write acme/new/ctl
+

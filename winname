@@ -1,0 +1,3 @@
+#!/bin/sh
+
+9p read acme/$winid/tag|awk '{sub("Del.*", ""); print; exit}'

@@ -1,0 +1,47 @@
+#!/bin/sh
+
+export SHELL="/bin/bash"
+export acmeshell="/bin/bash"
+export BROWSER=chromium
+export tabstop=4
+export PAGER=nobs # for removing non printable characters
+export TERM=dumb
+
+FONT="Go Mono"
+FONT_SZ=11
+acme_bin_dir=/home/i1i1/Projects/ascripts/ # $(dirname $0)
+
+export PATH="$PATH:$acme_bin_dir"
+
+acme_plumber_rules="$acme_bin_dir/plumbing"
+
+[ "$(pgrep plumber)" ] && killall plumber
+
+plumber
+
+9p write plumb/rules < "$acme_plumber_rules"
+
+if [ "$(pgrep acme)" ]
+then
+	wi=$(9p read acme/new/ctl|awk '{print $1}')
+	[ -d "$PWD/$1" ] && background afm "$PWD/$1" && exit
+	[ -f "$PWD/$1" ] || exit
+
+	echo name $PWD/$(basename $1)|9p write acme/$wi/ctl
+	echo get | 9p write acme/$wi/ctl
+	exit
+fi
+
+acme -ba -f /mnt/font/"$FONT"/"$FONT_SZ"a/font $1 &
+
+# Just polling, while acme will be ready to accept commands
+while [ $(9p read acme/index 2>/dev/null | wc -l ) != 1 ]
+do
+	sleep 0.05
+done
+
+# Deliting default file manager window
+echo del | 9p write acme/$(9p read acme/index|awk '{print $1}')/ctl
+
+9 win &
+afm "$PWD" &

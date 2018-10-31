@@ -1,0 +1,48 @@
+#!/bin/sh
+
+panic() {
+	echo no such tag "'$tag'" && exit 1
+}
+
+MAXDEPTH=3
+d="$PWD"
+
+while [ ! -f tags -a $MAXDEPTH != 0 ]
+do
+	cd ..
+	MAXDEPTH=$((MAXDEPTH-1))
+done
+
+if [ $MAXDEPTH = 0 ]
+then
+	cd "$d"
+	echo generating tags
+	ctags -R
+fi
+
+if [ "$#" = 0 ]
+then
+	tag="$(9p read acme/$winid/rdsel)"
+else
+	tag="$1"
+fi
+
+grep -q "^$tag	" ./tags || panic
+
+addr="$(grep ^$tag ./tags | awk -F'\t' '{a=$3; sub(";\"[^\"]*", "", a); gsub("[().*\\[\\]]", "\\\\&", a); print a; exit}')"
+file="$(grep ^$tag ./tags | awk -F'\t' '{print $2; exit}')"
+
+file="$(readlink -f $PWD'/'$file)"
+
+if 9p read acme/index|grep -q "$file"
+then
+	wi="$(9p read acme/index|grep $file|awk '{print $1}')"
+else
+	wi="$(9p read acme/new/ctl|awk '{print $1}')"
+	echo name "$file"|9p write acme/$wi/ctl
+	echo get | 9p write acme/$wi/ctl
+fi
+
+echo -n "$addr" | 9p write acme/$wi/addr
+echo dot=addr | 9p write acme/$wi/ctl
+echo show | 9p write acme/$wi/ctl

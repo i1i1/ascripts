@@ -1,0 +1,11 @@
+#!/bin/sh
+
+echo put|9p write acme/$winid/ctl
+
+fp=$(9p read acme/$winid/tag|cut -d' ' -f1)
+dir=$(dirname $fp)
+pdf=$dir"/"$(basename $fp .md).pdf
+
+pandoc $fp -o $pdf
+
+plumb $pdf

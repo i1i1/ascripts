@@ -1,0 +1,10 @@
+#!/bin/sh
+
+pres="$(dirname "$(winname)")"
+nm="$(basename $(winname))"
+curslide="$(grep -n "^$nm$" "$pres/index" | cut -d: -f1)"
+nextslide="$(sed -n $((curslide-1))p "$pres/index")"
+
+[ -z "$nextslide" ] && echo "No next slides!" && exit 0
+
+aslide $nextslide

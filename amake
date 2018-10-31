@@ -1,0 +1,13 @@
+#!/bin/sh
+
+MAXDEPTH=3
+
+while [ $MAXDEPTH != 0 -a ! -f ./Makefile -a ! -f ./makefile ]
+do
+	MAXDEPTH=$((MAXDEPTH-1))
+	cd ..
+done
+
+[ $MAXDEPTH = 0 ] && echo Where is Makefile? && exit
+
+make $@

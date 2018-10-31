@@ -1,0 +1,18 @@
+#!/bin/sh
+
+WI=$(9p read acme/new/ctl|awk '{print $1}')
+WINPX=$(9p read acme/$WI/ctl|awk '{print $6}')
+TABPX=$(9p read acme/$WI/ctl|awk '{print $NF}')
+export MANWIDTH=$((4 * $WINPX / $TABPX))
+
+man $@ 2>/dev/null | 9p write acme/$WI/body || exit 0
+
+echo -n #0|9p write acme/$WI/addr
+echo dot=addr|9p write acme/$WI/ctl
+echo show|9p write acme/$WI/ctl
+
+manname="/man/$(basename $(man -w $@)|awk -F. '{print $2"/"$1}')"
+echo name "$manname" | 9p write acme/$WI/ctl
+
+echo cleartag | 9p write acme/$WI/ctl
+echo clean | 9p write acme/$WI/ctl
