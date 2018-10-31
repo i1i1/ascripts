@@ -25,10 +25,9 @@ if [ "$(pgrep acme)" ]
 then
 	wi=$(9p read acme/new/ctl|awk '{print $1}')
 	[ -d "$PWD/$1" ] && background afm "$PWD/$1" && exit
-	[ -f "$PWD/$1" ] || exit
 
 	echo name $PWD/$(basename $1)|9p write acme/$wi/ctl
-	echo get | 9p write acme/$wi/ctl
+	[ -f "$PWD/$1" ] && echo get | 9p write acme/$wi/ctl
 	exit
 fi
 
@@ -40,8 +39,8 @@ do
 	sleep 0.05
 done
 
-# Deliting default file manager window
+# Deleting default file manager window
 echo del | 9p write acme/$(9p read acme/index|awk '{print $1}')/ctl
 
 9 win &
-afm "$PWD" &
+Fm "$PWD" &
